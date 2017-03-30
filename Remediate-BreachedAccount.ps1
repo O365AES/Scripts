@@ -44,7 +44,7 @@
     .PARAMETER NoRemoveDelegates
     .PARAMETER NoRemoveMailboxForwarding
 
-    .PARAMETER  RemediateAll
+    .PARAMETER  ConfirmAll
         Specifying this parameter will automate the remediation process, by default, confirmation is required.
         WARNING: This does not allow you to confirm the mailbox before remediation
 
