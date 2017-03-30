@@ -24,6 +24,12 @@
         to the remediation actions. This can be useful for further investigation, or potential reversal of any of the
         actions performed.
 
+        This script requires at this stage MSOL Azure V1.0 PowerShell and also Azure AD v2.0 to be installed.
+        You must also be connected to both as a Global Administrator prior to running the script.
+
+        Your user must also be connected to Exchange Online Remote PowerShell as a user with sufficient rights to
+        modify inbox rules, turn off calendar sharing, modify mailbox properties.
+
         Parts of this script and some actions have been taken from Brandon Koeller's script
         https://github.com/OfficeDev/O365-InvestigationTooling/blob/master/RemediateBreachedAccount.ps1
 
