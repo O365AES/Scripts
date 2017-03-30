@@ -25,6 +25,7 @@
         actions performed.
 
         This script requires at this stage MSOL Azure V1.0 PowerShell and also Azure AD v2.0 to be installed.
+        MSOL Azure v1.0 PowerShell is only required due to MFA settings not being available in Azure AD v2.0
         You must also be connected to both as a Global Administrator prior to running the script.
 
         Your user must also be connected to Exchange Online Remote PowerShell as a user with sufficient rights to
@@ -89,12 +90,15 @@ Function Reset-Password {
 		[string]$UPN
 	)
     Write-Host "[$UPN] Resetting password.."
-    $Password = Set-MsolUserPassword -UserPrincipalName $UPN -ForceChangePassword:$True
+
+    $Password = [System.Web.Security.Membership]::GeneratePassword(10,2)
+    Set-AzureADUserPassword -ObjectID $UPN -ForceChangePasswordNextLogin:$True -Password ($Password | ConvertTo-SecureString -AsPlainText -Force)
+
     Return $Password;
 }
 
 Function Enable-MFA {
-    # Turns on MFA for the user
+    # Turns on MFA for the user, this requires v1 of MSOL PowerShell due to lack of MFA support in v2
     Param(
         [string]$UPN
     )
@@ -164,11 +168,11 @@ Function Revoke-RefreshToken {
 		[string]$UPN
 	)
     
-    $MsolUser = Get-MsolUser -UserPrincipalName $UPN
+    $AADUser = Get-AzureADUser -ObjectID $UPN
 
-    Write-Host "[$UPN] Revoking Refresh Tokens for Object ID $($MsolUser.ObjectId)"
+    Write-Host "[$UPN] Revoking Refresh Tokens for Object ID $($AADUser.ObjectId)"
 
-    Revoke-AzureADUserAllRefreshToken -ObjectId $($MsolUser.ObjectID)
+    Revoke-AzureADUserAllRefreshToken -ObjectId $($AADUser.ObjectID)
     
 }
 
@@ -226,12 +230,13 @@ $Notes = ""
 
 #region prechecks
 
-# Check to see if we are connected to MSOL and Exchange Online first
-try {Get-MsolCompanyInformation -ErrorAction:stop | Out-Null} catch {Write-Error "This script requires you to be connected to MSOL v1 as a Global Administrator. Run Connect-MsolService first"}
-try {Get-AzureADTenantDetail -ErrorAction:stop | Out-Null} catch {Write-Error "This script requires you to be connected to Azure AD PowerShell v2.0 as a Global Administrator. Run Connect-AzureAD first"}
+# Check to see if we are connected to MSOL, Azure AD, and Exchange Online first
+try {Get-MsolCompanyInformation -ErrorAction:stop | Out-Null} catch {Write-Error "This script requires you to be connected to MSOL v1 as a Global Administrator. Run Connect-MsolService first"; Stop-Transcript; Exit}
+try {Get-AzureADTenantDetail -ErrorAction:stop | Out-Null} catch {Write-Error "This script requires you to be connected to Azure AD PowerShell v2.0 as a Global Administrator. Run Connect-AzureAD first"; Stop-Transcript; Exit}
+try {Get-Command Set-Mailbox -ErrorAction:stop | Out-Null} catch {Write-Error "This script requires you to be connected to Exchange Online Remote PowerShell. Run Connect-EXOPSSession (for new PowerShell EXO module) or connect using a PSSession."; Stop-Transcript; Exit}
 
 $Mailbox = Get-Mailbox $UPN -ErrorAction:stop
-$MsolUser = Get-MsolUser -UserPrincipalName $UPN
+$AADUser = Get-AzureADUser -ObjectID $UPN
 
 if(!$Mailbox) {
     Write-Error "Cannot get mailbox for $UPN. Either there is no mailbox, or you are not connected to Exchange Online"; exit
@@ -253,7 +258,7 @@ if(!$NoForensics) {
 
 if(!$NoPasswordReset) {
     # Determine if user is a federated user, turn off password reset if it is federated and notify that we must set on-premises
-    $Domain = $MsolUser.UserPrincipalName.Split("@")[1]
+    $Domain = $AADUser.UserPrincipalName.Split("@")[1]
     if((Get-AzureADDomain -Name $Domain).AuthenticationType -ne "Managed") {
         Write-Host "Not managed domain"
         $NoPasswordReset = $true
