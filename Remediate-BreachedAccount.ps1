@@ -248,7 +248,7 @@ if(!$NoForensics) {
 if(!$NoPasswordReset) {
     # Determine if user is a federated user, turn off password reset if it is federated and notify that we must set on-premises
     $Domain = $MsolUser.UserPrincipalName.Split("@")[1]
-    if((Get-AzureADDomain -Name $Domain).AuthenticationType -ne "Manage") {
+    if((Get-AzureADDomain -Name $Domain).AuthenticationType -ne "Managed") {
         Write-Host "Not managed domain"
         $NoPasswordReset = $true
         $Notes += "`nDomain is Federated, password must be reset in on-premises AD"
