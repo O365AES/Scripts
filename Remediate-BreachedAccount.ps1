@@ -59,6 +59,8 @@
 		Field Engineer - Microsoft
 		cam.murray@microsoft.com
 		
+		For updates, and more scripts, visit https://github.com/O365AES/Scripts
+		
 		Last update: 30 March 2017
 
 	.LINK
