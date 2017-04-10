@@ -5,9 +5,9 @@
 		This script exports all user MFA settings
 
 	.DESCRIPTION
-	    Iterates through users and reports on MFA settings.
+		Iterates through users and reports on MFA settings.
 
-        Requires Version 1 of Azure AD PowerShell (MSOL)
+        	Requires Version 1 of Azure AD PowerShell (MSOL)
 
 	.EXAMPLE
 		PS C:\> .\Get-MFASettings.ps1
@@ -46,8 +46,8 @@ ForEach($User in (Get-MsolUser -All)) {
     }
 
     $MFAUsers += New-Object -TypeName psobject -Property @{
-			    Member=$($User.UserPrincipalName)
-			    UserMFAState=$MFAState
+		Member=$($User.UserPrincipalName)
+		UserMFAState=$MFAState
                 Phone=$($User.StrongAuthenticationUserDetails.PhoneNumber)
                 Default=$Default
     }
