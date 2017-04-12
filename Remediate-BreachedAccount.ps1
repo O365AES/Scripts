@@ -34,6 +34,9 @@
         Parts of this script and some actions have been taken from Brandon Koeller's script
         https://github.com/OfficeDev/O365-InvestigationTooling/blob/master/RemediateBreachedAccount.ps1
 
+        For more information on this script, please visit
+        https://github.com/O365AES/Scripts/wiki/Remediate-Breached-Account
+
     .PARAMETER NoForensics
     .PARAMETER NoAudit
     .PARAMETER NoPasswordReset
