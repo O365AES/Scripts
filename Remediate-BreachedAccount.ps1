@@ -149,7 +149,14 @@ Function Dump-Forensics {
     $ForensicsFolder = "$PSScriptRoot\Forensics\$UPN\"
 
     Write-Host "[$UPN] Dumping forensics to $ForensicsFolder"
-    if(!(Test-Path($ForensicsFolder))) { mkdir $ForensicsFolder | Out-Null }
+    if(!(Test-Path($ForensicsFolder))) { 
+        Try {
+            mkdir $ForensicsFolder -ErrorAction:Stop | Out-Null 
+        } catch {
+            Write-Error "Cannot create directory $ForensicsFolder"
+            exit
+        }
+    }
 
     Get-Mailbox -Identity $UPN | Export-CliXml "$ForensicsFolder\$UPN-mailbox.xml" -Force | Out-Null
     Get-InboxRule -Mailbox $UPN | Export-CliXml "$ForensicsFolder\$UPN-inboxrules.xml" -Force | Out-Null
