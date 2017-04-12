@@ -81,6 +81,7 @@ Param(
     [switch]$NoRemoveCalendarPublishing,
     [switch]$NoRemoveDelegates,
     [switch]$NoRemoveMailboxForwarding,
+    [switch]$NoDisableMobileDevices,
     [switch]$ConfirmAll
 )
 
@@ -95,7 +96,7 @@ Function Reset-Password {
 
     $Password = [System.Web.Security.Membership]::GeneratePassword(10,2)
     Set-AzureADUserPassword -ObjectId $UPN -ForceChangePasswordNextLogin:$True -Password ($Password | ConvertTo-SecureString -AsPlainText -Force)
-    
+
     Return $Password;
 }
 
@@ -154,6 +155,8 @@ Function Dump-Forensics {
     Get-InboxRule -Mailbox $UPN | Export-CliXml "$ForensicsFolder\$UPN-inboxrules.xml" -Force | Out-Null
     Get-MailboxCalendarFolder -Identity "$($MailboxIdentity):\Calendar" | Export-CliXml "$ForensicsFolder\$UPN-MailboxCalendarFolder.xml" -Force | Out-Null
     Get-MailboxPermission -Identity $upn | Where-Object {($_.IsInherited -ne "True") -and ($_.User -notlike "*SELF*")} | Export-CliXml "$ForensicsFolder\$UPN-MailboxDelegates.xml" -Force | Out-Null
+    Get-MobileDevice -Mailbox $upn | Export-CliXml "$ForensicsFolder\$UPN-devices.xml" -Force | Out-Null
+    Get-MobileDevice -Mailbox $upn | Get-MobileDeviceStatistics | Export-CliXml "$ForensicsFolder\$UPN-devicestatistics.xml" -Force | Out-Null
 
     # Audit log if it exists
     
@@ -221,6 +224,42 @@ Function Remove-MailboxForwarding {
 
 }
 
+Function Disable-MobileDevices {
+    # Disable Mobile Devices for the User
+	Param(
+		[string]$UPN
+	)
+    Write-Host "[$UPN] Disabling ActiveSync Devices.."
+
+    $MobileDevices = Get-MobileDevice -Mailbox $UPN
+
+    $DisableDevices = @()
+    $WipeDevices = @()
+
+    ForEach($MobileDevice in $MobileDevices) {
+
+        $Stats = $null
+        $Stats = $MobileDevice | Get-MobileDeviceStatistics
+
+        if(!$ConfirmAll) {
+            $options = [System.Management.Automation.Host.ChoiceDescription[]] @("&Block", "&Wipe","&Allow")
+            $result = $host.UI.PromptForChoice($null , "`nBlock Mobile Device $($Stats.DeviceUserAgent) First Sync Time $($Stats.FirstSyncTime) Last Sync Attempt Time $($Stats.LastSyncAttemptTime)?" , $Options,0)
+            if($result -eq 0) { $DisableDevices += $MobileDevice.DeviceId }
+            if($result -eq 1) { $WipeDevices += $MobileDevice }
+        } else {
+            $DisableDevices += $MobileDevice.DeviceId
+        }
+    }
+
+    Set-CASMailbox $UPN -ActiveSyncBlockedDeviceIDs $DisableDevices
+
+    ForEach($WipeDevice in $WipeDevices) {
+        Write-Host "[$UPN] Wiping Device $($WipeDevice.Identity)"
+        Clear-MobileDevice -Identity "$($WipeDevice.Identity)"
+    }
+
+}
+
 #endregion
 
 #region start
@@ -284,6 +323,7 @@ if(!$NoDisableForwardingRules ) { Disable-ForwardingRules -UPN $UPN }
 if(!$NoRemoveCalendarPublishing ) { Remove-CalendarPublishing -UPN $UPN -MailboxIdentity $Mailbox.Identity }
 if(!$NoRemoveDelegates ) { Remove-MailboxDelegates -UPN $UPN }
 if(!$NoRemoveMailboxForwarding ) { Remove-MailboxForwarding -UPN $UPN }
+if(!$NoDisableMobileDevices) { Disable-MobileDevices -UPN $UPN }
 
 #endregion
 
@@ -302,6 +342,7 @@ if(!$NoDisableForwardingRules) { Write-Host " - Disabled Forwarding Rules" }
 if(!$NoRemoveCalendarPublishing) { Write-Host " - Remove Calendar Publishing" }
 if(!$NoRemoveDelegates) { Write-Host " - Removed Mailbox Delegates" }
 if(!$NoRemoveMailboxForwarding ) { Write-Host " - Removed Mailbox Forwarding" }
+if(!$NoDisableMobileDevices) { Write-Host " - Disabled Mobile Devices" }
 
 Write-Host "`nAdditional notes" -ForegroundColor Green
 Write-Host $Notes
