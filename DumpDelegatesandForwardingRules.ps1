@@ -11,7 +11,7 @@ $ExoSession = New-PSSession -ConfigurationName Microsoft.Exchange -ConnectionUri
 Import-PSSession $ExoSession
 
 $allUsers = @()
-$AllUsers = Get-MsolUser -All -EnabledFilter EnabledOnly | select ObjectID, UserPrincipalName, FirstName, LastName, StrongAuthenticationRequirements, StsRefreshTokensValidFrom, StrongPasswordRequired, LastPasswordChangeTimestamp | Where-Object {($_.UserPrincipalName -notlike "*#EXT#*")}
+$AllUsers = Get-MsolUser -All -EnabledFilter EnabledOnly | Select-Object ObjectID, UserPrincipalName, FirstName, LastName, StrongAuthenticationRequirements, StsRefreshTokensValidFrom, StrongPasswordRequired, LastPasswordChangeTimestamp | Where-Object {($_.UserPrincipalName -notlike "*#EXT#*")}
 
 $UserInboxRules = @()
 $UserDelegates = @()
