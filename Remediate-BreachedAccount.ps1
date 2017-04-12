@@ -94,8 +94,8 @@ Function Reset-Password {
     Write-Host "[$UPN] Resetting password.."
 
     $Password = [System.Web.Security.Membership]::GeneratePassword(10,2)
-    Set-AzureADUserPassword -ObjectID $UPN -ForceChangePasswordNextLogin:$True -Password ($Password | ConvertTo-SecureString -AsPlainText -Force)
-
+    Set-AzureADUserPassword -ObjectId $UPN -ForceChangePasswordNextLogin:$True -Password ($Password | ConvertTo-SecureString -AsPlainText -Force)
+    
     Return $Password;
 }
 
