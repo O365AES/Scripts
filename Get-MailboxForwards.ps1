@@ -15,6 +15,9 @@
         By specifying the -NoRules switch, Inbox Rules are not loaded for each mailbox, dramatically speeding up the report. However,
         we will not find auto forward rules.
 
+    .PARAMETER OutCSV
+        Output to a CSV file
+
 	.NOTES
 		Cam Murray
 		Field Engineer - Microsoft
@@ -30,7 +33,8 @@
 Param(
     [CmdletBinding()]
     [Array]$IgnoredDomains,
-    [Switch]$NoRules
+    [Switch]$NoRules,
+    [String]$OutCSV=$null
 )
 
 # Create the forward array to store forwards
@@ -107,3 +111,8 @@ ForEach($Mailbox in $Mailboxes) {
 Write-Host "$(Get-Date) Finished. Found $($Forwards.Count) forwards in $($Mailboxes.Count) mailboxes"
 
 $Forwards | Format-Table -AutoSize Owner,Type,Email
+
+If($OutCSV -ne $null) {
+    Write-Host "$(Get-Date) Outputting to CSV file $OutCSV"
+    $Forwards | Export-CSV -Path $OutCSV -NoTypeInformation    
+}
