@@ -311,9 +311,10 @@ if(!$NoPasswordReset) {
     # Determine if user is a federated user, turn off password reset if it is federated and notify that we must set on-premises
     $Domain = $AADUser.UserPrincipalName.Split("@")[1]
     if((Get-AzureADDomain -Name $Domain).AuthenticationType -ne "Managed") {
-        Write-Host "Not managed domain"
-        $NoPasswordReset = $true
-        $Notes += "`nDomain is Federated, password must be reset in on-premises AD"
+
+        Write-Host "Domain is a federated domain, password may need to be managed on-premises unless password-write back is turned on."
+
+        $Notes += "`nDomain is Federated. If password write-back is not used, password should be set on-premises."
     }
 }
 
