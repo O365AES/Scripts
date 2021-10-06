@@ -347,13 +347,14 @@ Add-Type -path "$PSScriptRoot\Microsoft.Identity.Client.dll"
 # Adjust the apiUrl for different context if accessing shared mailbox
 
 if($config.Mailbox -ne $config.Account) {
-    $scope = 'https://outlook.office.com/mail.readwrite','https://outlook.office.com/mail.readwrite.shared'
+    [string[]]$scope = 'https://outlook.office.com/mail.readwrite','https://outlook.office.com/mail.readwrite.shared'
     $apiUrl = "https://outlook.office.com/api/v2.0/users/$($config.Mailbox)"
 } else {
-    $scope = 'https://outlook.office.com/mail.readwrite'
+    [string[]]$scope = 'https://outlook.office.com/mail.readwrite'
     $apiUrl = "https://outlook.office.com/api/v2.0/me"
 }
 
+<#
 $pca = New-Object "Microsoft.Identity.Client.PublicClientApplication" -ArgumentList $config.ClientID
 
 # Load saved token cache
@@ -372,11 +373,22 @@ if(($pca.UserTokenCache.ReadItems($config.ClientID) | where-object {$_.ExpiresOn
 }
 
 $token = $result.Result
+#>
+
+# Update Authentication Part at 2021-10-05-17:20(UTC+8)
+$ClientApplicationBuilder = [Microsoft.Identity.Client.PublicClientApplicationBuilder]::Create($config.ClientID)
+$app = $ClientApplicationBuilder.WithRedirectUri("http://localhost")
+$app.GetType()
+$pca = $app.Build()
+$tempInTheMiddle = $pca.AcquireTokenInteractive($Scopes)
+$AuthResult = $tempInTheMiddle.ExecuteAsync()
+$result = $AuthResult.GetAwaiter().GetResult()
+$token = $result.AccessToken
 
 # Prepare header to be used in requests
 $headers = New-Object 'System.Collections.Generic.Dictionary[[String],[String]]'
 $headers.Add('Accept', 'application/json')
-$headers.Add('Authorization', "Bearer $($token.Token)")
+$headers.Add('Authorization', "Bearer $token)")
 $headers.Add('X-AnchorMailbox', $config.mailbox)
 
 # Check if the folders Inbox\Skipped and Inbox\Processed are there, otherwise create them
